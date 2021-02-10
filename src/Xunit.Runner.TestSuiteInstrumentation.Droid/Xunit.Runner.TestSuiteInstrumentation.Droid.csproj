@@ -59,6 +59,11 @@
     <Compile Include="!ResultPath\AdbResultPath.cs" />
     <Compile Include="!ResultPath\IResultPath.cs" />
     <Compile Include="!ResultPath\TrxResultPath.cs" />
+    <Compile Include="IInstrumentationProgress.cs" />
+    <Compile Include="BundleExtensions.cs" />
+    <Compile Include="CachedChannelResult\CachedResultChannel.cs" />
+    <Compile Include="CachedChannelResult\ICachedResultChannel.cs" />
+    <Compile Include="CachedChannelResult\ICachedResultChannelExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="NuGet.Build.Tasks.Pack">
@@ -69,11 +74,15 @@
     <PackageReference Include="xunit.runner.devices">
       <Version>2.5.25</Version>
     </PackageReference>
+    <PackageReference Include="xunit.abstractions">
+      <Version>2.0.3</Version>
+    </PackageReference>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Resources\drawable\" />
     <Folder Include="Resources\values\" />
     <Folder Include="!ResultPath\" />
+    <Folder Include="CachedChannelResult\" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\Android\Xamarin.Android.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
