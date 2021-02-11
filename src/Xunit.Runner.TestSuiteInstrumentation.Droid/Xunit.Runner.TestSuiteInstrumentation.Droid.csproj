@@ -21,9 +21,10 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/PuntusEugene/Xunit.Runner.TestSuiteInstrumentation</RepositoryUrl>
     <PackageId>xunit.runner.testSuiteInstrumentation</PackageId>
-    <PackageVersion>1.0.1</PackageVersion>
+    <PackageVersion>1.0.2</PackageVersion>
     <Authors>Eugene Puntus</Authors>
     <Description>Test suite instrumentation for running xUnit integration tests on emulator or device. In addition, this instrumentation allows run tests in pipelines.</Description>
+    <PackageTags>xunit,android,integration,tests,insrumentation</PackageTags>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
