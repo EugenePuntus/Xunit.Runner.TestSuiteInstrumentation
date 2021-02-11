@@ -61,7 +61,7 @@ namespace Xunit.Runners.TestSuiteInstrumentation
             assetsProperty.SetValue(platformHelpersType, Application.Context.Assets);
         }
 
-        public override async void OnStart()
+        public override void OnStart()
         {
             base.OnStart();
 
@@ -76,7 +76,7 @@ namespace Xunit.Runners.TestSuiteInstrumentation
             try
             {
                 _progress.Send("Getting a list of tests...");
-                var testAssemblyViewModels = await _instrumentDeviceRunner.Discover();
+                var testAssemblyViewModels = _instrumentDeviceRunner.Discover().GetAwaiter().GetResult();
                 var testCases = testAssemblyViewModels.SelectMany(x => x.TestCases).ToList();
 
                 _progress.Send(TestCasesToString(testCases), $"{testCases.Count()} test cases were found.");
@@ -84,12 +84,12 @@ namespace Xunit.Runners.TestSuiteInstrumentation
                 for (var i = 1; i<= testCases.Count; i++)
                 {
                     var testCase = testCases[i-1];
-                    await _instrumentDeviceRunner.Run(testCase);
+                    _instrumentDeviceRunner.Run(testCase).GetAwaiter().GetResult();
                     _progress.Send($"{i}/{testCases.Count} [{testCase.Result.ToString().ToUpper()}] {testCase.TestCase.DisplayName}");
                 }
 
                 _progress.Send("Saving test results...");
-                await _cachedResultChannel.SaveTo(_originalResultChannel, "RunEverything");
+                _cachedResultChannel.SaveTo(_originalResultChannel, "RunEverything").GetAwaiter().GetResult();
                 _cachedResultChannel.Clear();
 
                 failedCount = testCases.Count(x => x.Result == TestState.Failed);
