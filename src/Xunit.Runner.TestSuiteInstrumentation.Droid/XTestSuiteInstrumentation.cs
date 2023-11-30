@@ -1,13 +1,9 @@
-﻿using Android.App;
+﻿using System.Reflection;
+using System.Text;
+using Android.App;
 using Android.OS;
 using Android.Runtime;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading;
-using Xunit.Runners.ResultChannels;
+using Xunit.Runners.Maui.VisualRunner;
 
 namespace Xunit.Runners.TestSuiteInstrumentation
 {
@@ -15,8 +11,9 @@ namespace Xunit.Runners.TestSuiteInstrumentation
     {
         private InstrumentationDeviceRunner _instrumentDeviceRunner;
         private IResultPath _resultsPath;
-        private readonly IResultChannel _originalResultChannel;
-        private readonly ICachedResultChannel _cachedResultChannel;
+        //private readonly IResultChannel _originalResultChannel;
+
+        //private readonly ICachedResultChannel _cachedResultChannel;
         private readonly IInstrumentationProgress _progress;
 
         protected XunitTestSuiteInstrumentation(IntPtr handle, JniHandleOwnership transfer)
@@ -25,23 +22,17 @@ namespace Xunit.Runners.TestSuiteInstrumentation
         }
 
         protected XunitTestSuiteInstrumentation(IntPtr handle, JniHandleOwnership transfer, IResultPath resultPath)
-            : this(handle, transfer, resultPath, new TrxResultChannel(resultPath.Path()))
+            : this(handle, transfer, resultPath, new InstrumentationProgress())
         {
         }
 
-        protected XunitTestSuiteInstrumentation(IntPtr handle, JniHandleOwnership transfer, IResultPath resultPath, IResultChannel resultChannel)
-            : this(handle, transfer, resultPath, resultChannel, new InstrumentationProgress())
-        {
-        }
-
-        protected XunitTestSuiteInstrumentation(IntPtr handle, JniHandleOwnership transfer, IResultPath resultPath, IResultChannel resultChannel, IInstrumentationProgress progress)
+        protected XunitTestSuiteInstrumentation(IntPtr handle, JniHandleOwnership transfer, IResultPath resultPath, IInstrumentationProgress progress)
             : base(handle, transfer)
         {
             _resultsPath = resultPath;
-            _originalResultChannel = resultChannel;
             _progress = progress;
-            _cachedResultChannel = new CachedResultChannel();
-            _instrumentDeviceRunner = new InstrumentationDeviceRunner(new List<Assembly>(), null, _cachedResultChannel);
+            //_cachedResultChannel = new CachedResultChannel();
+            _instrumentDeviceRunner = new InstrumentationDeviceRunner(new List<Assembly>(), null, null);
         }
 
         public override void OnCreate(Bundle arguments)
@@ -58,7 +49,7 @@ namespace Xunit.Runners.TestSuiteInstrumentation
             var assembly = Assembly.GetAssembly(typeof(DeviceRunner));
             var platformHelpersType = assembly.GetType("Xunit.Runners.PlatformHelpers");
             var assetsProperty = platformHelpersType.GetProperty("Assets");
-            assetsProperty.SetValue(platformHelpersType, Application.Context.Assets);
+            assetsProperty.SetValue(platformHelpersType, Android.App.Application.Context.Assets);
         }
 
         public override void OnStart()
@@ -76,25 +67,25 @@ namespace Xunit.Runners.TestSuiteInstrumentation
             try
             {
                 _progress.Send("Getting a list of tests...");
-                var testAssemblyViewModels = _instrumentDeviceRunner.Discover().GetAwaiter().GetResult();
+                var testAssemblyViewModels = _instrumentDeviceRunner.DiscoverAsync().GetAwaiter().GetResult();
                 var testCases = testAssemblyViewModels.SelectMany(x => x.TestCases).ToList();
 
                 _progress.Send(TestCasesToString(testCases), $"{testCases.Count()} test cases were found.");
 
-                for (var i = 1; i<= testCases.Count; i++)
+                for (var i = 1; i <= testCases.Count; i++)
                 {
-                    var testCase = testCases[i-1];
-                    _instrumentDeviceRunner.Run(testCase).GetAwaiter().GetResult();
+                    var testCase = testCases[i - 1];
+                    _instrumentDeviceRunner.RunAsync(testCase).GetAwaiter().GetResult();
                     _progress.Send($"{i}/{testCases.Count} [{testCase.Result.ToString().ToUpper()}] {testCase.TestCase.DisplayName}");
                 }
 
                 _progress.Send("Saving test results...");
-                _cachedResultChannel.SaveTo(_originalResultChannel, "RunEverything").GetAwaiter().GetResult();
-                _cachedResultChannel.Clear();
+                //_cachedResultChannel.SaveTo(_originalResultChannel, "RunEverything").GetAwaiter().GetResult();
+                //_cachedResultChannel.Clear();
 
                 failedCount = testCases.Count(x => x.Result == TestState.Failed);
 
-                resultsBundle.WithValue("Results", ResultsToString(testCases));
+                //resultsBundle.WithValue("Results", ResultsToString(testCases));
             }
             catch (Exception ex)
             {
@@ -111,7 +102,7 @@ namespace Xunit.Runners.TestSuiteInstrumentation
 
             for (var i = 1; i <= count; i++)
             {
-                var testCase = testCases[i-1];
+                var testCase = testCases[i - 1];
                 stringBuilder.AppendLine($"{i}/{count} {testCase.TestCase.DisplayName}");
             }
 

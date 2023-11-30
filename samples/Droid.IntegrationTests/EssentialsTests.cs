@@ -1,5 +1,4 @@
-﻿using Xamarin.Essentials;
-using Xunit;
+﻿using Xunit;
 
 namespace Droid.IntegrationTests
 {
@@ -25,7 +24,7 @@ namespace Droid.IntegrationTests
         public void DeviceInfoShouldReturnsCorrectPackageName()
         {
             Assert.Equal(
-                "com.companyname.droid_integrationtests",
+                "com.companyname.droid.integrationtests",
                 AppInfo.PackageName);
         }
     }
