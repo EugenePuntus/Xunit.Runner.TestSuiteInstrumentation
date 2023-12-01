@@ -3,6 +3,7 @@ using System.Text;
 using Android.App;
 using Android.OS;
 using Android.Runtime;
+using Microsoft.Extensions.Logging;
 using Xunit.Runners.Maui.VisualRunner;
 
 namespace Xunit.Runners.TestSuiteInstrumentation
@@ -10,25 +11,18 @@ namespace Xunit.Runners.TestSuiteInstrumentation
     public abstract class XunitTestSuiteInstrumentation : Instrumentation
     {
         private InstrumentationDeviceRunner _instrumentDeviceRunner;
-        private IResultPath _resultsPath;
         private readonly IInstrumentationProgress _progress;
 
         protected XunitTestSuiteInstrumentation(IntPtr handle, JniHandleOwnership transfer)
-            : this(handle, transfer, new TrxResultPath())
+            : this(handle, transfer, new InstrumentationProgress())
         {
         }
 
-        protected XunitTestSuiteInstrumentation(IntPtr handle, JniHandleOwnership transfer, IResultPath resultPath)
-            : this(handle, transfer, resultPath, new InstrumentationProgress())
-        {
-        }
-
-        protected XunitTestSuiteInstrumentation(IntPtr handle, JniHandleOwnership transfer, IResultPath resultPath, IInstrumentationProgress progress)
+        protected XunitTestSuiteInstrumentation(IntPtr handle, JniHandleOwnership transfer, IInstrumentationProgress progress)
             : base(handle, transfer)
         {
-            _resultsPath = resultPath;
             _progress = progress;
-            _instrumentDeviceRunner = new InstrumentationDeviceRunner(new List<Assembly>(), null, null);
+            _instrumentDeviceRunner = new InstrumentationDeviceRunner(new List<Assembly>(), null, new Logger<string>(new LoggerFactory()));
         }
 
         public override void OnCreate(Bundle arguments)
@@ -41,17 +35,11 @@ namespace Xunit.Runners.TestSuiteInstrumentation
         public virtual void Setup()
         {
             _progress.InitializeFor(this);
-
-            var assembly = Assembly.GetAssembly(typeof(DeviceRunner));
-            var platformHelpersType = assembly.GetType("Xunit.Runners.PlatformHelpers");
-            var assetsProperty = platformHelpersType.GetProperty("Assets");
-            assetsProperty.SetValue(platformHelpersType, Android.App.Application.Context.Assets);
         }
 
         public override void OnStart()
         {
             base.OnStart();
-
             // is needed for synchronized running tests.
             SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
 
@@ -108,5 +96,4 @@ namespace Xunit.Runners.TestSuiteInstrumentation
             _instrumentDeviceRunner = _instrumentDeviceRunner.AddTestAssembly(assembly);
         }
     }
-
 }
