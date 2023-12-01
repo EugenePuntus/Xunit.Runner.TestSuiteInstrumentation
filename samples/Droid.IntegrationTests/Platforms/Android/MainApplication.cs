@@ -1,7 +1,7 @@
 ﻿using Android.App;
 using Android.Runtime;
 
-namespace Droid.IntegrationTests._8;
+namespace Droid.IntegrationTests;
 
 [Application]
 public class MainApplication : MauiApplication

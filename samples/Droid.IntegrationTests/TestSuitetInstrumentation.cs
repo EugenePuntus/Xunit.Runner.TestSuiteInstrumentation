@@ -15,8 +15,6 @@ namespace Droid.IntegrationTests.MAUI
 
         protected override void AddTests()
         {
-            //Xamarin.Forms.Mocks.MockForms.Init(Device.Android);
-
             AddTestAssembly(Assembly.GetExecutingAssembly());
         }
     }

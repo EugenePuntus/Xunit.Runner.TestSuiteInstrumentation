@@ -1,6 +1,6 @@
 ﻿using Xunit.Runners.Maui;
 
-namespace Droid.IntegrationTests._8;
+namespace Droid.IntegrationTests;
 
 public static class MauiProgram
 {
