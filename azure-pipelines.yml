@@ -17,13 +17,11 @@ variables:
 - group: Xunit.Runner.TestSuiteInstrumentation
 - name: isMain
   value: $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]
-- name: isPullRequest
-  value: $[eq(variables['Build.Reason'], 'PullRequest')]
 - name: PackageVersion
-  ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
-    value: $[variables['PRBuildNumber']]
-  ${{ else }}:
+  ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
     value: $[format('{0}.{1}', variables['MajorMinorVersions'], counter(variables['MajorMinorVersions'], 0))]
+  ${{ else }}:
+    value: $[variables['PRBuildNumber']]
 
 name: $(PackageVersion)
 
