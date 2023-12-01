@@ -21,7 +21,7 @@ variables:
   ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
     value: $[format('{0}.{1}', variables['MajorMinorVersions'], counter(variables['MajorMinorVersions'], 0))]
   ${{ else }}:
-    value: $[variables['PRBuildNumber']]
+    value: $[format('{0}', variables['PRBuildNumber'])]
 
 name: $(PackageVersion)
 
