@@ -19,13 +19,11 @@ variables:
   value: $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]
 - name: isPullRequest
   value: $[eq(variables['Build.Reason'], 'PullRequest')]
-- name: PatchNumber
+- name: PackageVersion
   ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
     value: $(date:yyyyMMdd)$(rev:.r)
   ${{ else }}:
-    value: $[counter(variables['MajorMinorVersions'], 0)]
-- name: PackageVersion
-  value: $[format('{0}.{1}', variables['MajorMinorVersions'], variables['PatchNumber'])]
+    value: $[format('{0}.{1}', variables['MajorMinorVersions'], counter(variables['MajorMinorVersions'], 0))]
 
 name: $(PackageVersion)
 
