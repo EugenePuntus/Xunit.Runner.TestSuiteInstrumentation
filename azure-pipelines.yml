@@ -1,0 +1,124 @@
+trigger:
+  branches:
+    include:
+    - main
+  paths:
+    exclude:
+    - README.md
+    - docs/*
+
+pool:
+  name: Azure Pipelines
+  demands: msbuild
+
+variables:
+- group: General
+- group: Xunit.Runner.TestSuiteInstrumentation
+- name: isMain
+  value: $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]
+- name: isPullRequest
+  value: $[eq(variables['Build.Reason'], 'PullRequest')]
+- name: PatchNumber
+  ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
+    value: 'PR'
+  ${{ else }}:
+    value: $[counter(variables['MajorMinorVersions'], 0)]
+- name: PackageVersion
+  value: $[format('{0}.{1}', variables['MajorMinorVersions'], variables['PatchNumber'])]
+
+name: $(PackageVersion)
+
+steps:
+- task: UseDotNet@2
+  displayName: 'Use .NET Core sdk 8.x'
+  inputs:
+    version: 8.x
+
+- bash: |
+   dotnet nuget locals all --clear 
+   dotnet workload install maui --source https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet7/nuget/v3/index.json --source https://api.nuget.org/v3/index.json
+   dotnet workload install android maui wasm-tools --source https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet7/nuget/v3/index.json --source https://api.nuget.org/v3/index.json
+  displayName: 'Install MAUI'
+
+- task: NuGetToolInstaller@0
+  displayName: 'Use NuGet 6.x'
+  inputs:
+    versionSpec: 6.x
+    checkLatest: true
+
+- task: NuGetCommand@2
+  displayName: 'NuGet restore'
+  inputs:
+    restoreSolution: '**/*.sln'
+
+- task: MSBuild@1
+  displayName: 'Build solution **/*.sln'
+  inputs:
+    msbuildArchitecture: x64
+    configuration: '$(buildConfiguration)'
+    msbuildArguments: '/p:OutputPath="$(outputDirectory)"'
+    clean: true
+
+- task: Bash@3
+  displayName: 'Start Android emulator'
+  inputs:
+    targetType: filePath
+    filePath: ./Scripts/RunAndroidEmulator.sh
+  enabled: false
+
+- task: Bash@3
+  displayName: 'Install Integration Tests'
+  inputs:
+    targetType: filePath
+    filePath: ./Scripts/InstallApkToEmulator.sh
+    arguments: '$(outputDirectory)/com.companyname.droid.integrationtests.apk'
+  enabled: false
+
+- task: Bash@3
+  displayName: 'Bash Script'
+  inputs:
+    targetType: filePath
+    filePath: ./Scripts/RunIntegrationTest.sh
+    arguments: '$(Build.SourcesDirectory) com.companyname.droid.integrationtests sample.testSuiteInstrumentation'
+  enabled: false
+
+- task: PublishTestResults@2
+  displayName: 'Publish Test Results'
+  inputs:
+    testResultsFormat: VSTest
+    testResultsFiles: '**/TestResults.trx'
+    mergeTestResults: true
+    failTaskOnFailedTests: true
+    failTaskOnMissingResultsFile: true
+    testRunTitle: 'Integration tests'
+  enabled: false
+
+- task: MSBuild@1
+  displayName: 'Nuget pack for PR check'
+  condition: and(succeeded(), eq(variables.isMain, false))
+  inputs:
+    solution: '**/Xunit.Runner.TestSuiteInstrumentation.Droid.csproj'
+    msbuildArchitecture: x64
+    configuration: '$(buildConfiguration)'
+    msbuildArguments: '/t:pack /p:packageOutputPath=$(Build.ArtifactStagingDirectory)  /p:OutputPath=$(outputDirectory) /p:IncludeReferencedProjects=true'
+
+- task: MSBuild@1
+  displayName: 'Nuget pack'
+  condition: and(succeeded(), eq(variables.isMain, true))
+  inputs:
+    solution: '**/Xunit.Runner.TestSuiteInstrumentation.Droid.csproj'
+    msbuildArchitecture: x64
+    configuration: '$(buildConfiguration)'
+    msbuildArguments: '/p:PackageVersion=$(Build.BuildNumber) /t:pack /p:packageOutputPath=$(Build.ArtifactStagingDirectory)  /p:OutputPath=$(outputDirectory) /p:IncludeReferencedProjects=true'
+
+- task: PublishBuildArtifacts@1
+  displayName: 'Publish Artifact: drop'
+  condition: succeededOrFailed()
+
+- task: NuGetCommand@2
+  displayName: 'NuGet push'
+  condition: and(succeeded(), eq(variables.isMain, true))
+  inputs:
+    command: push
+    nuGetFeedType: external
+    publishFeedCredentials: '$(publishFeedCredentials))'
