@@ -11,9 +11,6 @@ namespace Xunit.Runners.TestSuiteInstrumentation
     {
         private InstrumentationDeviceRunner _instrumentDeviceRunner;
         private IResultPath _resultsPath;
-        //private readonly IResultChannel _originalResultChannel;
-
-        //private readonly ICachedResultChannel _cachedResultChannel;
         private readonly IInstrumentationProgress _progress;
 
         protected XunitTestSuiteInstrumentation(IntPtr handle, JniHandleOwnership transfer)
@@ -31,7 +28,6 @@ namespace Xunit.Runners.TestSuiteInstrumentation
         {
             _resultsPath = resultPath;
             _progress = progress;
-            //_cachedResultChannel = new CachedResultChannel();
             _instrumentDeviceRunner = new InstrumentationDeviceRunner(new List<Assembly>(), null, null);
         }
 
@@ -80,12 +76,8 @@ namespace Xunit.Runners.TestSuiteInstrumentation
                 }
 
                 _progress.Send("Saving test results...");
-                //_cachedResultChannel.SaveTo(_originalResultChannel, "RunEverything").GetAwaiter().GetResult();
-                //_cachedResultChannel.Clear();
 
                 failedCount = testCases.Count(x => x.Result == TestState.Failed);
-
-                //resultsBundle.WithValue("Results", ResultsToString(testCases));
             }
             catch (Exception ex)
             {
@@ -104,32 +96,6 @@ namespace Xunit.Runners.TestSuiteInstrumentation
             {
                 var testCase = testCases[i - 1];
                 stringBuilder.AppendLine($"{i}/{count} {testCase.TestCase.DisplayName}");
-            }
-
-            return stringBuilder.ToString();
-        }
-
-        private string ResultsToString(List<TestCaseViewModel> testCases)
-        {
-            var stringBuilder = new StringBuilder();
-            stringBuilder.AppendLine(string.Empty);
-
-            var totalCount = testCases.Count();
-            var passedCount = testCases.Count(x => x.Result == TestState.Passed);
-            var failedCount = testCases.Count(x => x.Result == TestState.Failed);
-            var skippedCount = testCases.Count(x => x.Result == TestState.Skipped);
-            var notRunningCount = testCases.Count(x => x.Result == TestState.NotRun);
-
-            stringBuilder
-                    .AppendLine($"total={totalCount}")
-                    .AppendLine($"passed={passedCount}")
-                    .AppendLine($"failed={failedCount}")
-                    .AppendLine($"skipped={skippedCount}")
-                    .AppendLine($"notRun={notRunningCount}");
-
-            if (_resultsPath != null)
-            {
-                stringBuilder.AppendLine($"xunit-results-path={new AdbResultPath(_resultsPath).Path()}");
             }
 
             return stringBuilder.ToString();
