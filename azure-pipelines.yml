@@ -121,4 +121,4 @@ steps:
   inputs:
     command: push
     nuGetFeedType: external
-    publishFeedCredentials: '$(publishFeedCredentials))'
+    publishFeedCredentials: '$(publishFeedCredentials)'
