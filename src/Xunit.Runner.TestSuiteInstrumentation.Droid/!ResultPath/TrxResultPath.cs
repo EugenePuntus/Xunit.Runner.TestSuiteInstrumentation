@@ -1,6 +1,4 @@
-﻿using Android.App;
-using Android.OS;
-using System.IO;
+﻿using Android.OS;
 
 namespace Xunit.Runners.TestSuiteInstrumentation
 {
@@ -10,7 +8,7 @@ namespace Xunit.Runners.TestSuiteInstrumentation
         {
             Java.IO.File externalFilesDir = GetExternalFilesDir();
             bool num = externalFilesDir?.Exists() ?? false;
-            string text = num ? externalFilesDir.AbsolutePath : System.IO.Path.Combine(Application.Context!.FilesDir!.AbsolutePath, ".__override__");
+            string text = num ? externalFilesDir.AbsolutePath : System.IO.Path.Combine(Android.App.Application.Context!.FilesDir!.AbsolutePath, ".__override__");
             if (!num && !Directory.Exists(text))
             {
                 Directory.CreateDirectory(text);
@@ -26,7 +24,7 @@ namespace Xunit.Runners.TestSuiteInstrumentation
             }
             string text = null;
             text = Android.OS.Environment.DirectoryDocuments;
-            return Application.Context!.GetExternalFilesDir(text);
+            return Android.App.Application.Context!.GetExternalFilesDir(text);
         }
     }
 }
