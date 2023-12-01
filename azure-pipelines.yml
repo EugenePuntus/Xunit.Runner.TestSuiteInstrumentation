@@ -21,7 +21,7 @@ variables:
   value: $[eq(variables['Build.Reason'], 'PullRequest')]
 - name: PackageVersion
   ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
-    value: $(date:yyyyMMdd)$(rev:.r)
+    value: $[(date:yyyyMMdd)(rev:.r)]
   ${{ else }}:
     value: $[format('{0}.{1}', variables['MajorMinorVersions'], counter(variables['MajorMinorVersions'], 0))]
 
