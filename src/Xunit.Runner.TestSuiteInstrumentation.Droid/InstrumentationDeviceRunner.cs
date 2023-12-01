@@ -1,25 +1,25 @@
-﻿using Android.Util;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
+﻿using System.Reflection;
+using Android.Util;
+using Microsoft.Extensions.Logging;
+using Xunit.Runners.Maui.VisualRunner;
 
 namespace Xunit.Runners.TestSuiteInstrumentation
 {
     public class InstrumentationDeviceRunner : DeviceRunner
     {
         private readonly IReadOnlyCollection<Assembly> _testAssemblies;
-        private readonly INavigation _navigation;
-        private readonly IResultChannel _resultChannel;
+        private readonly ITestNavigation _navigation;
+        private readonly ILogger _logger;
 
         public InstrumentationDeviceRunner(
             IReadOnlyCollection<Assembly> testAssemblies,
-            INavigation navigation,
-            IResultChannel resultChannel)
-            : base(testAssemblies, navigation, resultChannel)
+            ITestNavigation navigation,
+            ILogger logger)
+            : base(testAssemblies, navigation, logger)
         {
             _testAssemblies = testAssemblies;
             _navigation = navigation;
-            _resultChannel = resultChannel;
+            _logger = logger;
         }
 
         public InstrumentationDeviceRunner AddTestAssembly(Assembly assembly)
@@ -29,7 +29,7 @@ namespace Xunit.Runners.TestSuiteInstrumentation
 
             Log.Info("xUnit", $"xUnit add tests from {assembly.FullName}");
 
-            return new InstrumentationDeviceRunner(testAsseblies, _navigation, _resultChannel);
+            return new InstrumentationDeviceRunner(testAsseblies, _navigation, _logger);
         }
     }
 }
