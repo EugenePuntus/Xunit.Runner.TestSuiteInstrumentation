@@ -3,7 +3,7 @@
 ANDROID_HOME="/Users/$USER/Library/Developer/Xamarin/android-sdk-macosx"
 
 TARGET_DIR="$PWD"
-APP_PACKAGE_NAME="com.companyname.droid_integrationtests"
+APP_PACKAGE_NAME="com.companyname.droid.integrationtests"
 TEST_INSTRUMENTATION_NAME="sample.testSuiteInstrumentation"
 EMULATOR_NAME="emulator-5554"
 
