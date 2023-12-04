@@ -96,7 +96,7 @@ steps:
     solution: '**/Xunit.Runner.TestSuiteInstrumentation.Droid.csproj'
     msbuildArchitecture: x64
     configuration: '$(buildConfiguration)'
-    msbuildArguments: '/t:pack /p:packageOutputPath=$(Build.ArtifactStagingDirectory) /p:IncludeReferencedProjects=true'
+    msbuildArguments: '/t:pack /p:packageOutputPath=$(Build.ArtifactStagingDirectory) /p:IncludeReferencedProjects=true /p:PackageReleaseNotes="$(releaseNotes)"'
 
 - task: MSBuild@1
   displayName: 'Nuget pack'
@@ -105,7 +105,7 @@ steps:
     solution: '**/Xunit.Runner.TestSuiteInstrumentation.Droid.csproj'
     msbuildArchitecture: x64
     configuration: '$(buildConfiguration)'
-    msbuildArguments: '/p:PackageVersion=$(Build.BuildNumber) /t:pack /p:packageOutputPath=$(Build.ArtifactStagingDirectory) /p:IncludeReferencedProjects=true'
+    msbuildArguments: '/p:PackageVersion=$(Build.BuildNumber) /t:pack /p:packageOutputPath=$(Build.ArtifactStagingDirectory) /p:IncludeReferencedProjects=true /p:PackageReleaseNotes="$(releaseNotes)"'
 
 - task: PublishBuildArtifacts@1
   displayName: 'Publish Artifact: drop'
