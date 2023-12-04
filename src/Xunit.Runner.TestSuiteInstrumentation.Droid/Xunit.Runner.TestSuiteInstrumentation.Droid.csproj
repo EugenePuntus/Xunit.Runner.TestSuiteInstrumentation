@@ -9,6 +9,12 @@
         <ApplicationId>com.companyname.Xunit.Runner.TestSuiteInstrumentation.Droid</ApplicationId>
         <ApplicationVersion>1</ApplicationVersion>
         <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <RepositoryUrl>https://github.com/PuntusEugene/Xunit.Runner.TestSuiteInstrumentation</RepositoryUrl>
+        <PackageId>xunit.runner.testSuiteInstrumentation</PackageId>
+        <Authors>Yauheni Puntus, Yauheni Bychkovsky</Authors>
+        <Description>Test suite instrumentation for running xUnit integration tests on emulator or device. In addition, this instrumentation allows run tests in pipelines.</Description>
+        <PackageTags>xunit,android,integration,tests,insrumentation</PackageTags>
     </PropertyGroup>
     <ItemGroup>
       <PackageReference Include="Shiny.Xunit.Runners.Maui" Version="1.0.0" />
