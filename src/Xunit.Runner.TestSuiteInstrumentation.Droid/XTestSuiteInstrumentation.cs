@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System.Collections.Generic;
+using System.Reflection;
 using System.Text;
 using Android.App;
 using Android.OS;
@@ -12,17 +13,24 @@ namespace Xunit.Runners.TestSuiteInstrumentation
     {
         private InstrumentationDeviceRunner _instrumentDeviceRunner;
         private readonly IInstrumentationProgress _progress;
+        private IResultPath _resultsPath;
 
         protected XunitTestSuiteInstrumentation(IntPtr handle, JniHandleOwnership transfer)
-            : this(handle, transfer, new InstrumentationProgress())
+            : this(handle, transfer, new TrxResultPath())
         {
         }
 
-        protected XunitTestSuiteInstrumentation(IntPtr handle, JniHandleOwnership transfer, IInstrumentationProgress progress)
+        protected XunitTestSuiteInstrumentation(IntPtr handle, JniHandleOwnership transfer, IResultPath resultPath)
+            : this(handle, transfer, resultPath, new InstrumentationProgress())
+        {
+        }
+
+        protected XunitTestSuiteInstrumentation(IntPtr handle, JniHandleOwnership transfer, IResultPath resultPath, IInstrumentationProgress progress)
             : base(handle, transfer)
         {
             _progress = progress;
             _instrumentDeviceRunner = new InstrumentationDeviceRunner(new List<Assembly>(), null, new Logger<string>(new LoggerFactory()));
+            _resultsPath = resultPath;
         }
 
         public override void OnCreate(Bundle arguments)
@@ -66,6 +74,8 @@ namespace Xunit.Runners.TestSuiteInstrumentation
                 _progress.Send("Saving test results...");
 
                 failedCount = testCases.Count(x => x.Result == TestState.Failed);
+
+                resultsBundle.WithValue("Results", ResultsToString(testCases));
             }
             catch (Exception ex)
             {
@@ -84,6 +94,32 @@ namespace Xunit.Runners.TestSuiteInstrumentation
             {
                 var testCase = testCases[i - 1];
                 stringBuilder.AppendLine($"{i}/{count} {testCase.TestCase.DisplayName}");
+            }
+
+            return stringBuilder.ToString();
+        }
+
+        private string ResultsToString(List<TestCaseViewModel> testCases)
+        {
+            var stringBuilder = new StringBuilder();
+            stringBuilder.AppendLine(string.Empty);
+
+            var totalCount = testCases.Count();
+            var passedCount = testCases.Count(x => x.Result == TestState.Passed);
+            var failedCount = testCases.Count(x => x.Result == TestState.Failed);
+            var skippedCount = testCases.Count(x => x.Result == TestState.Skipped);
+            var notRunningCount = testCases.Count(x => x.Result == TestState.NotRun);
+
+            stringBuilder
+                    .AppendLine($"total={totalCount}")
+                    .AppendLine($"passed={passedCount}")
+                    .AppendLine($"failed={failedCount}")
+                    .AppendLine($"skipped={skippedCount}")
+                    .AppendLine($"notRun={notRunningCount}");
+
+            if (_resultsPath != null)
+            {
+                stringBuilder.AppendLine($"xunit-results-path={new AdbResultPath(_resultsPath).Path()}");
             }
 
             return stringBuilder.ToString();
