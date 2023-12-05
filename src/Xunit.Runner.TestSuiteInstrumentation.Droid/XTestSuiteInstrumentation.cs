@@ -1,19 +1,19 @@
-﻿using System.Collections.Generic;
 using System.Reflection;
-using System.Text;
 using Android.App;
 using Android.OS;
 using Android.Runtime;
 using Microsoft.Extensions.Logging;
 using Xunit.Runners.Maui.VisualRunner;
+using Xunit.Runners.ResultChannels;
 
 namespace Xunit.Runners.TestSuiteInstrumentation
 {
     public abstract class XunitTestSuiteInstrumentation : Instrumentation
     {
         private InstrumentationDeviceRunner _instrumentDeviceRunner;
+        private readonly IResultPath _resultsPath;
+        private readonly IResultChannel _originalResultChannel;
         private readonly IInstrumentationProgress _progress;
-        private IResultPath _resultsPath;
 
         protected XunitTestSuiteInstrumentation(IntPtr handle, JniHandleOwnership transfer)
             : this(handle, transfer, new TrxResultPath())
@@ -21,16 +21,31 @@ namespace Xunit.Runners.TestSuiteInstrumentation
         }
 
         protected XunitTestSuiteInstrumentation(IntPtr handle, JniHandleOwnership transfer, IResultPath resultPath)
-            : this(handle, transfer, resultPath, new InstrumentationProgress())
+            : this(handle, transfer, resultPath, new TrxResultChannel(resultPath.Path()))
         {
         }
 
-        protected XunitTestSuiteInstrumentation(IntPtr handle, JniHandleOwnership transfer, IResultPath resultPath, IInstrumentationProgress progress)
+        protected XunitTestSuiteInstrumentation(IntPtr handle, JniHandleOwnership transfer, IResultPath resultPath, IResultChannel resultChannel)
+            : this(handle, transfer, resultPath, resultChannel, new InstrumentationProgress())
+        {
+        }
+
+        protected XunitTestSuiteInstrumentation(
+            IntPtr handle, 
+            JniHandleOwnership transfer,
+            IResultPath resultPath,
+            IResultChannel resultChannel,
+            IInstrumentationProgress progress)
             : base(handle, transfer)
         {
-            _progress = progress;
-            _instrumentDeviceRunner = new InstrumentationDeviceRunner(new List<Assembly>(), null, new Logger<string>(new LoggerFactory()));
             _resultsPath = resultPath;
+            _originalResultChannel = resultChannel;
+            _progress = progress;
+            _instrumentDeviceRunner = new InstrumentationDeviceRunner(
+                new List<Assembly>(),
+                null,
+                new Logger<string>(new LoggerFactory())
+            );
         }
 
         public override void OnCreate(Bundle arguments)
@@ -45,7 +60,7 @@ namespace Xunit.Runners.TestSuiteInstrumentation
             _progress.InitializeFor(this);
         }
 
-        public override void OnStart()
+        public override async void OnStart()
         {
             base.OnStart();
             // is needed for synchronized running tests.
@@ -59,70 +74,31 @@ namespace Xunit.Runners.TestSuiteInstrumentation
             try
             {
                 _progress.Send("Getting a list of tests...");
-                var testAssemblyViewModels = _instrumentDeviceRunner.DiscoverAsync().GetAwaiter().GetResult();
+                
+                var testAssemblyViewModels = await _instrumentDeviceRunner.DiscoverAsync();
                 var testCases = testAssemblyViewModels.SelectMany(x => x.TestCases).ToList();
 
-                _progress.Send(TestCasesToString(testCases), $"{testCases.Count()} test cases were found.");
+                _progress.Send(testCases.AsString(), $"{testCases.Count} test cases were found.");
 
                 for (var i = 1; i <= testCases.Count; i++)
                 {
                     var testCase = testCases[i - 1];
-                    _instrumentDeviceRunner.RunAsync(testCase).GetAwaiter().GetResult();
+                    await _instrumentDeviceRunner.RunAsync(testCase);
                     _progress.Send($"{i}/{testCases.Count} [{testCase.Result.ToString().ToUpper()}] {testCase.TestCase.DisplayName}");
                 }
 
                 _progress.Send("Saving test results...");
-
+                await _instrumentDeviceRunner.SaveTo(_originalResultChannel, "RunEverything");
+                _instrumentDeviceRunner.Clear();
+                
                 failedCount = testCases.Count(x => x.Result == TestState.Failed);
-
-                resultsBundle.WithValue("Results", ResultsToString(testCases));
+                resultsBundle.WithValue("Results", testCases.ResultsToString(_resultsPath));
             }
             catch (Exception ex)
             {
                 resultsBundle.WithValue("error", ex.ToString());
             }
-            Finish((failedCount == 0) ? Result.Ok : Result.Canceled, resultsBundle);
-        }
-
-        private string TestCasesToString(List<TestCaseViewModel> testCases)
-        {
-            var count = testCases.Count;
-            var stringBuilder = new StringBuilder(count);
-            stringBuilder.AppendLine(string.Empty);
-
-            for (var i = 1; i <= count; i++)
-            {
-                var testCase = testCases[i - 1];
-                stringBuilder.AppendLine($"{i}/{count} {testCase.TestCase.DisplayName}");
-            }
-
-            return stringBuilder.ToString();
-        }
-
-        private string ResultsToString(List<TestCaseViewModel> testCases)
-        {
-            var stringBuilder = new StringBuilder();
-            stringBuilder.AppendLine(string.Empty);
-
-            var totalCount = testCases.Count();
-            var passedCount = testCases.Count(x => x.Result == TestState.Passed);
-            var failedCount = testCases.Count(x => x.Result == TestState.Failed);
-            var skippedCount = testCases.Count(x => x.Result == TestState.Skipped);
-            var notRunningCount = testCases.Count(x => x.Result == TestState.NotRun);
-
-            stringBuilder
-                    .AppendLine($"total={totalCount}")
-                    .AppendLine($"passed={passedCount}")
-                    .AppendLine($"failed={failedCount}")
-                    .AppendLine($"skipped={skippedCount}")
-                    .AppendLine($"notRun={notRunningCount}");
-
-            if (_resultsPath != null)
-            {
-                stringBuilder.AppendLine($"xunit-results-path={new AdbResultPath(_resultsPath).Path()}");
-            }
-
-            return stringBuilder.ToString();
+            Finish(failedCount == 0 ? Result.Ok : Result.Canceled, resultsBundle);
         }
 
         protected abstract void AddTests();
