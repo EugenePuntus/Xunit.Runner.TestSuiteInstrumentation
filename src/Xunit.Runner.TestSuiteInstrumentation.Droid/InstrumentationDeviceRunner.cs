@@ -5,9 +5,8 @@ using Xunit.Runners.Maui.VisualRunner;
 
 namespace Xunit.Runners.TestSuiteInstrumentation
 {
-    public class InstrumentationDeviceRunner : DeviceRunner
+    public class InstrumentationDeviceRunner : DeviceRunner, ITestListener
     {
-        private readonly IReadOnlyCollection<Assembly> _testAssemblies;
         private readonly ITestNavigation _navigation;
         private readonly ILogger _logger;
 
@@ -17,19 +16,31 @@ namespace Xunit.Runners.TestSuiteInstrumentation
             ILogger logger)
             : base(testAssemblies, navigation, logger)
         {
-            _testAssemblies = testAssemblies;
             _navigation = navigation;
             _logger = logger;
         }
 
+        public IList<TestResultViewModel> Results { get; } = new List<TestResultViewModel>();
+
+        void ITestListener.RecordResult(TestResultViewModel result)
+        {
+            Results.Add(result);
+            this.RecordResult(result);
+        }
+
+        public void Clear()
+        {
+            Results.Clear();
+        }
+        
         public InstrumentationDeviceRunner AddTestAssembly(Assembly assembly)
         {
-            var testAsseblies = _testAssemblies.ToList();
-            testAsseblies.Add(assembly);
+            var testAssemblies = TestAssemblies.ToList();
+            testAssemblies.Add(assembly);
 
             Log.Info("xUnit", $"xUnit add tests from {assembly.FullName}");
 
-            return new InstrumentationDeviceRunner(testAsseblies, _navigation, _logger);
+            return new InstrumentationDeviceRunner(testAssemblies, _navigation, _logger);
         }
     }
 }
