@@ -84,12 +84,12 @@ steps:
   enabled: false
 
 - script: |
-    dotnet pack src/Xunit.Runner.TestSuiteInstrumentation.Droid.csproj --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory) --include-symbols /p:PackageVersion=$(PackageVersion) /p:IncludeReferencedProjects=true /p:PackageReleaseNotes="$(releaseNotes)"
+    dotnet pack src/Xunit.Runner.TestSuiteInstrumentation.Droid/Xunit.Runner.TestSuiteInstrumentation.Droid.csproj --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory) --include-symbols /p:PackageVersion=$(PackageVersion) /p:IncludeReferencedProjects=true /p:PackageReleaseNotes="$(releaseNotes)"
   displayName: 'Nuget pack for PR check'
   condition: and(succeeded(), eq(variables.isMain, false))
 
 - script: |
-    dotnet pack src/Xunit.Runner.TestSuiteInstrumentation.Droid.csproj --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory) --include-symbols /p:PackageVersion=$(PackageVersion) /p:IncludeReferencedProjects=true /p:PackageReleaseNotes="$(releaseNotes)"
+    dotnet pack src/Xunit.Runner.TestSuiteInstrumentation.Droid/Xunit.Runner.TestSuiteInstrumentation.Droid.csproj --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory) --include-symbols /p:PackageVersion=$(PackageVersion) /p:IncludeReferencedProjects=true /p:PackageReleaseNotes="$(releaseNotes)"
   displayName: 'Nuget pack for PR check'
   condition: and(succeeded(), eq(variables.isMain, true))
 
