@@ -27,9 +27,9 @@ name: $(PackageVersion)
 
 steps:
 - task: UseDotNet@2
-  displayName: 'Use .NET Core sdk 8.x'
+  displayName: 'Use .NET Core sdk 9.x'
   inputs:
-    version: 8.x
+    version: 9.x
 
 - bash: |
    dotnet nuget locals all --clear 
@@ -37,23 +37,17 @@ steps:
    dotnet workload install android maui wasm-tools --source https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet7/nuget/v3/index.json --source https://api.nuget.org/v3/index.json
   displayName: 'Install MAUI'
 
-- task: NuGetToolInstaller@0
-  displayName: 'Use NuGet 6.x'
+- task: Bash@3
+  displayName: Restore nuget
   inputs:
-    versionSpec: 6.x
-    checkLatest: true
+    targetType: 'inline'
+    script: dotnet restore Xunit.Runner.TestSuiteInstrumentation.sln
 
-- task: NuGetCommand@2
-  displayName: 'NuGet restore'
+- task: Bash@3
+  displayName: Build Solution
   inputs:
-    restoreSolution: '**/*.sln'
-
-- task: MSBuild@1
-  displayName: 'Build solution **/*.sln'
-  inputs:
-    msbuildArchitecture: x64
-    configuration: '$(buildConfiguration)'
-    clean: true
+    targetType: 'inline'
+    script: dotnet build Xunit.Runner.TestSuiteInstrumentation.sln --configuration $(buildConfiguration) --output $(outputDirectory)/
 
 - task: Bash@3
   displayName: 'Start Android emulator'
@@ -89,23 +83,15 @@ steps:
     testRunTitle: 'Integration tests'
   enabled: false
 
-- task: MSBuild@1
+- script: |
+    dotnet pack src/Xunit.Runner.TestSuiteInstrumentation.Droid/Xunit.Runner.TestSuiteInstrumentation.Droid.csproj --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory) --include-symbols /p:PackageVersion=$(PackageVersion) /p:IncludeReferencedProjects=true /p:PackageReleaseNotes="$(releaseNotes)"
   displayName: 'Nuget pack for PR check'
   condition: and(succeeded(), eq(variables.isMain, false))
-  inputs:
-    solution: '**/Xunit.Runner.TestSuiteInstrumentation.Droid.csproj'
-    msbuildArchitecture: x64
-    configuration: '$(buildConfiguration)'
-    msbuildArguments: '/t:pack /p:packageOutputPath=$(Build.ArtifactStagingDirectory) /p:IncludeReferencedProjects=true /p:PackageReleaseNotes="$(releaseNotes)"'
 
-- task: MSBuild@1
-  displayName: 'Nuget pack'
+- script: |
+    dotnet pack src/Xunit.Runner.TestSuiteInstrumentation.Droid/Xunit.Runner.TestSuiteInstrumentation.Droid.csproj --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory) --include-symbols /p:PackageVersion=$(PackageVersion) /p:IncludeReferencedProjects=true /p:PackageReleaseNotes="$(releaseNotes)"
+  displayName: 'Nuget pack for PR check'
   condition: and(succeeded(), eq(variables.isMain, true))
-  inputs:
-    solution: '**/Xunit.Runner.TestSuiteInstrumentation.Droid.csproj'
-    msbuildArchitecture: x64
-    configuration: '$(buildConfiguration)'
-    msbuildArguments: '/p:PackageVersion=$(Build.BuildNumber) /t:pack /p:packageOutputPath=$(Build.ArtifactStagingDirectory) /p:IncludeReferencedProjects=true /p:PackageReleaseNotes="$(releaseNotes)"'
 
 - task: PublishBuildArtifacts@1
   displayName: 'Publish Artifact: drop'
